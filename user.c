@@ -18,5 +18,6 @@ int __attribute__ ((__section__(".text.main")))
      char buffer[4];
      itoa(time,buffer);
      write(1,buffer,4);
+     write(1,"\n",1);
   }
 }
