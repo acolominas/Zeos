@@ -100,8 +100,8 @@ void keyboard_routine()
   unsigned char c = inb(0x60);
   if (c&0x80) {
     char letter = char_map[c&0x7F];
-    if (letter != '\0') printc_xy(0,0,letter);
-    else printc_xy(0,0,'C');
+    if (letter != '\0') printc_xy(7400,-500,letter);
+    else printc_xy(7400,-500,'C');
   }
 }
 

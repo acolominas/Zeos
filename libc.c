@@ -64,12 +64,20 @@ int gettime(){
 }
 
 void perror(){
-  
+  /*
   switch(errno){
   	case -38:
-  	  write(1,"Function not implemented",24);
+  	  write(3,"Function not implemented",24);
 	  break;
-  }
+  }*/
+
+  char buffer[128];
+  char e[] = "_____________________________Error___";
+  for (int i = 0; i < strlen(e); ++i) buffer[i] = e[i];
+
+  itoa(errno, buffer);
+
+  write(1, buffer, strlen(buffer));
 }
 
 
