@@ -62,6 +62,11 @@ void cpu_idle(void)
 
 void init_idle (void)
 {
+	struct task_struct *idle = list_head_to_task_struct(list_first(&freequeue));
+	idle.PID = 0;
+	allocate_DIR(idle);
+
+	idle_task = idle;
 
 }
 
