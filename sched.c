@@ -24,7 +24,7 @@ struct task_struct *list_head_to_task_struct(struct list_head *l)
 #endif
 
 extern struct list_head blocked;
-
+struct task_struct *idle_task;
 
 /* get_DIR - Returns the Page Directory address for task 't' */
 page_table_entry * get_DIR (struct task_struct *t) 
@@ -62,12 +62,27 @@ void cpu_idle(void)
 
 void init_idle (void)
 {
-	struct task_struct *idle = list_head_to_task_struct(list_first(&freequeue));
-	idle.PID = 0;
+	struct list_head *head = list_first(&freequeue);
+
+    	list_del(head);
+
+	struct task_struct *idle = list_head_to_task_struct(head);
+
+	union task_union *idle_task_union = (union task_union*)idle;
+
+	idle->PID = 0;
+
 	allocate_DIR(idle);
 
-	idle_task = idle;
+	//CONTEXT
+	idle_task_union->stack[1023] = (unsigned long)&cpu_idle;
 
+	idle_task_union->stack[1022] = 0;
+
+	idle_task_union->task.kernel_esp = (unsigned long)&idle_task_union->stack[1022];
+	////////
+
+	idle_task = idle; 
 }
 
 void init_task1(void)
