@@ -1,0 +1,12 @@
+4.10    Work to do
+• Adapt the task_struct definition.OK!
+• Initialize a free queue.OK!
+• Initialize a ready queue.OK!
+• Implement the initial processes initialization.
+• Implement the task_switch function.
+• Implement the inner_task_switch function.
+• Implement the getpid system call.
+• Implement the fork system call.
+• Implement process scheduling.
+• Implement the exit system call.
+• Implement the getstats system call.

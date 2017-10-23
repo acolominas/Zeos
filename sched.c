@@ -5,6 +5,7 @@
 #include <sched.h>
 #include <mm.h>
 #include <io.h>
+#include <libc.h>
 
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
@@ -68,8 +69,34 @@ void init_task1(void)
 {
 }
 
+void init_freequeue()
+{
+	INIT_LIST_HEAD(&freequeue);
+    
+    struct list_head *head = list_first(&freequeue);
+
+	for (int i=1;i<NR_TASKS;++i) {		
+
+        struct list_head *new = &task[i].task.list;
+
+		list_add(new,head);
+
+		head = new;
+	}
+}
+
+void init_readyqueue()
+{
+	INIT_LIST_HEAD(&readyqueue);
+}
 
 void init_sched(){
+	
+	init_freequeue();
+
+	init_readyqueue();
+
+	//FALTA CONTINUAR
 
 }
 
@@ -82,5 +109,10 @@ struct task_struct* current()
 	: "=g" (ret_value)
   );
   return (struct task_struct*)(ret_value&0xfffff000);
+}
+
+struct task_struct *list_head_to_task_struct(struct list_head *l) {
+	return (struct task_struct*)((unsigned int)l&0xfffff000);
+
 }
 

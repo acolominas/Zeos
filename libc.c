@@ -6,6 +6,8 @@
 
 #include <types.h>
 
+#include <errno.h>
+
 int errno;
 
 void itoa(int a, char *b)
@@ -47,7 +49,7 @@ int write(int fd,char *buffer, int size){
   int res;
   __asm__ __volatile__ ("int $0x80;": "=a" (res): "a" (4), "b" (fd),"c" (buffer), "d" (size));
   if(res < 0){
-      errno = res;
+      errno = -res;
       return -1;
   }
   return res;
@@ -57,27 +59,33 @@ int gettime(){
   int res;
   __asm__ __volatile__ ("int $0x80;":"=a" (res): "a" (10));
   if(res < 0){
-      errno = res;
+      errno = -res;
       return -1;
   }
   return res;
 }
 
-void perror(){
-  /*
+void perror(char *s){
+  
+  write(1,s,strlen(s));
+
   switch(errno){
-  	case -38:
-  	  write(3,"Function not implemented",24);
-	  break;
-  }*/
-
-  char buffer[128];
-  char e[] = "_____________________________Error___";
-  for (int i = 0; i < strlen(e); ++i) buffer[i] = e[i];
-
-  itoa(errno, buffer);
-
-  write(1, buffer, strlen(buffer));
+  	case ENOSYS:
+  	     write(1,"Function not implemented",24);
+	       break;
+    case EPNULL:
+        write(1,"Pointer is null",15);
+        break;
+    case EMSGSIZE:
+        write(1,"Message too long",16);
+        break;
+    case EACCES:
+        write(1,"Permission denied",17);
+        break;
+    case EBADF:
+        write(1,"Bad file number",15);
+        break;
+  } 
 }
 
 

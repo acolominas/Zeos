@@ -97,11 +97,11 @@ void clock_routine()
 
 void keyboard_routine()
 {
-  unsigned char c = inb(0x60);
-  if (c&0x80) {
-    char letter = char_map[c&0x7F];
-    if (letter != '\0') printc_xy(7400,-500,letter);
-    else printc_xy(7400,-500,'C');
+  unsigned char c = inb(0x60); //obtenemos el valor del registro 0x60
+  if (c&0x80) { //comprobamos si es pulsar o dejar
+    char letter = char_map[c&0x7F];   //obrenemos el valor del charmap con la mascara para descartar el 7 bit
+    if (letter != '\0') printc_xy(70,15,letter);
+    else printc_xy(70,15,'C');
   }
 }
 
