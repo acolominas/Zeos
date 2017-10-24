@@ -53,7 +53,7 @@ int allocate_DIR(struct task_struct *t)
 void inner_task_switch(union task_union*new)
 {
 
-	tss.esp0 = (unsigned long)&new->stack;
+	tss.esp0 = (unsigned long)&new->stack[KERNEL_STACK_SIZE];
 
 	set_cr3(new->task.dir_pages_baseAddr);
 
@@ -64,45 +64,39 @@ void inner_task_switch(union task_union*new)
 	: "=g" (ret_value)
 	);
 
-	(current())->kernel_esp = ret_value;
+	current()->kernel_esp = ret_value;
 
 	__asm__ __volatile__(
-  	"movl %0, %%esp;"
-	:
+	"movl %0, %%esp;":
 	: "g" (new->task.kernel_esp)
 	);
 
 	__asm__ __volatile__(
   	"popl %ebp\n\t"
-  	"iret"	
+  	"ret"	
 	);
 }
 
 void task_switch(union task_union*new)
 {
-	__asm__ __volatile__(
-  	"pushl %esi\n\t"
-  	"pushl %edi\n\t"
-  	"pushl %ebx"
-  );
+  
+	__asm__ __volatile__("pushl %esi;""pushl %edi;""pushl %ebx");
 
    inner_task_switch(new);
 
-  __asm__ __volatile__(
-  	"popl %ebx\n\t"
-  	"popl %edi\n\t"
-  	"popl %esi"
-  );
+  __asm__ __volatile__("popl %ebx;""popl %edi;""popl %esi");
 
 }
 
 void cpu_idle(void)
 {
 	__asm__ __volatile__("sti": : :"memory");
-
+    //int pid = sys_getpid();
+    //char buffer[4];
+    //itoa(pid,buffer);
 	while(1)
 	{
-	;
+	;	//sys_write(1,buffer,4);
 	}
 }
 
@@ -112,20 +106,20 @@ void init_idle (void)
 
     list_del(head);
 
-	struct task_struct *idle = list_head_to_task_struct(head);
-
-	idle_task_union = (union task_union*)idle;
+	struct task_struct *idle = list_head_to_task_struct(head);	
 
 	idle->PID = 0;
 
 	allocate_DIR(idle);
 
+	idle_task_union = (union task_union*)idle;
+
 	//CONTEXT
-	idle_task_union->stack[1023] = (unsigned long)&cpu_idle;
+	idle_task_union->stack[KERNEL_STACK_SIZE-1] = (unsigned long)&cpu_idle;
 
-	idle_task_union->stack[1022] = 0;
+	idle_task_union->stack[KERNEL_STACK_SIZE-2] = 0;
 
-	idle_task_union->task.kernel_esp = (unsigned long)&idle_task_union->stack[1022];
+	idle_task_union->task.kernel_esp = (unsigned long)&idle_task_union->stack[KERNEL_STACK_SIZE-2];
 	////////
 
 	idle_task = idle; 
@@ -137,9 +131,7 @@ void init_task1(void)
 
     list_del(head);
 
-	struct task_struct *init = list_head_to_task_struct(head);
-
-	union task_union *init_task_union = (union task_union*)init;
+	struct task_struct *init = list_head_to_task_struct(head);	
 
 	init->PID = 1;
 
@@ -147,7 +139,9 @@ void init_task1(void)
 
 	set_user_pages(init);
 
-	tss.esp0 = (unsigned long)&init_task_union->stack;
+	union task_union *init_task_union = (union task_union*)init;
+
+	tss.esp0 = (unsigned long)&init_task_union->stack[KERNEL_STACK_SIZE];
 
 	set_cr3(init->dir_pages_baseAddr);
 

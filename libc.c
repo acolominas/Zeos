@@ -56,7 +56,7 @@ int write(int fd,char *buffer, int size){
 }
 
 int gettime(){  
-  int res;
+  int res = -1;
   __asm__ __volatile__ ("int $0x80;":"=a" (res): "a" (10));
   if(res < 0){
       errno = -res;
@@ -65,14 +65,25 @@ int gettime(){
   return res;
 }
 
+int getpid(){
+  int res = -1;
+  __asm__ __volatile__ ("int $0x80;":"=a" (res): "a" (20));
+  if(res < 0){
+      errno = -res;
+      return -1;
+  }
+  return res;
+
+}
+
 void perror(char *s){
   
   write(1,s,strlen(s));
 
   switch(errno){
-  	case ENOSYS:
-  	     write(1,"Function not implemented",24);
-	       break;
+    case ENOSYS:
+         write(1,"Function not implemented",24);
+         break;
     case EPNULL:
         write(1,"Pointer is null",15);
         break;
