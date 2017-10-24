@@ -50,6 +50,52 @@ int allocate_DIR(struct task_struct *t)
 	return 1;
 }
 
+void inner_task_switch(union task_union*new)
+{
+
+	tss.esp0 = (unsigned long)&new->stack;
+
+	set_cr3(new->task.dir_pages_baseAddr);
+
+	int ret_value;
+
+	__asm__ __volatile__(
+  	"movl %%ebp, %0;"
+	: "=g" (ret_value)
+	);
+
+	(current())->kernel_esp = ret_value;
+
+	__asm__ __volatile__(
+  	"movl %0, %%esp;"
+	:
+	: "g" (new->task.kernel_esp)
+	);
+
+	__asm__ __volatile__(
+  	"popl %ebp\n\t"
+  	"iret"	
+	);
+}
+
+void task_switch(union task_union*new)
+{
+	__asm__ __volatile__(
+  	"pushl %esi\n\t"
+  	"pushl %edi\n\t"
+  	"pushl %ebx"
+  );
+
+   inner_task_switch(new);
+
+  __asm__ __volatile__(
+  	"popl %ebx\n\t"
+  	"popl %edi\n\t"
+  	"popl %esi"
+  );
+
+}
+
 void cpu_idle(void)
 {
 	__asm__ __volatile__("sti": : :"memory");
@@ -64,11 +110,11 @@ void init_idle (void)
 {
 	struct list_head *head = list_first(&freequeue);
 
-    	list_del(head);
+    list_del(head);
 
 	struct task_struct *idle = list_head_to_task_struct(head);
 
-	union task_union *idle_task_union = (union task_union*)idle;
+	idle_task_union = (union task_union*)idle;
 
 	idle->PID = 0;
 
@@ -87,6 +133,25 @@ void init_idle (void)
 
 void init_task1(void)
 {
+	struct list_head *head = list_first(&freequeue);
+
+    list_del(head);
+
+	struct task_struct *init = list_head_to_task_struct(head);
+
+	union task_union *init_task_union = (union task_union*)init;
+
+	init->PID = 1;
+
+	allocate_DIR(init);
+
+	set_user_pages(init);
+
+	tss.esp0 = (unsigned long)&init_task_union->stack;
+
+	set_cr3(init->dir_pages_baseAddr);
+
+
 }
 
 void init_freequeue()
@@ -115,8 +180,6 @@ void init_sched(){
 	init_freequeue();
 
 	init_readyqueue();
-
-	//FALTA CONTINUAR
 
 }
 

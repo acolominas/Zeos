@@ -6,6 +6,7 @@
 #include <segment.h>
 #include <hardware.h>
 #include <io.h>
+#include <sched.h>
 
 #include <zeos_interrupt.h>
 
@@ -91,8 +92,11 @@ void setIdt()
 
 void clock_routine()
 {
-   ++zeos_ticks;
-   zeos_show_clock();
+  ++zeos_ticks;
+  if(zeos_ticks == 400) {  
+      task_switch(idle_task_union);
+  }
+  zeos_show_clock();
 }
 
 void keyboard_routine()
