@@ -45,7 +45,8 @@ int strlen(char *a)
   return i;
 }
 
-int write(int fd,char *buffer, int size){
+int write(int fd,char *buffer, int size)
+{
   int res;
   __asm__ __volatile__ ("int $0x80;": "=a" (res): "a" (4), "b" (fd),"c" (buffer), "d" (size));
   if(res < 0){
@@ -55,7 +56,8 @@ int write(int fd,char *buffer, int size){
   return res;
 }
 
-int gettime(){  
+int gettime()
+{  
   int res = -1;
   __asm__ __volatile__ ("int $0x80;":"=a" (res): "a" (10));
   if(res < 0){
@@ -76,7 +78,19 @@ int getpid(){
 
 }
 
-void perror(char *s){
+int fork()
+{
+  int res = -1;
+  __asm__ __volatile__ ("int $0x80;":"=a" (res): "a" (2));
+  if(res < 0){
+      errno = -res;
+      return -1;
+  }
+  return res;
+}
+
+void perror(char *s)
+{
   
   write(1,s,strlen(s));
 
@@ -95,6 +109,12 @@ void perror(char *s){
         break;
     case EBADF:
         write(1,"Bad file number",15);
+        break;
+    case ENOSPACE:
+        write(1,"No space for a new process",26);
+        break;
+    case ENOPAGES:
+        write(1,"There are no enough free pages",29);
         break;
   } 
 }

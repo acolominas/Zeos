@@ -138,6 +138,8 @@
 /* for robust mutexes */
 #define EOWNERDEAD  130 /* Owner died */
 #define ENOTRECOVERABLE 131 /* State not recoverable */
-#define EPNULL 132 /* Pointer is null */
+#define EPNULL 		132 /* Pointer is null */
+#define ENOSPACE 	133 /*No space for a new process*/
+#define ENOPAGES 	134 /*No enough free pages*/
 
 #endif

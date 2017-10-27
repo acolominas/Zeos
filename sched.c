@@ -23,6 +23,7 @@ struct task_struct *list_head_to_task_struct(struct list_head *l)
 }
 #endif
 
+int freePID;
 extern struct list_head blocked;
 struct task_struct *idle_task;
 
@@ -67,7 +68,8 @@ void inner_task_switch(union task_union*new)
 	current()->kernel_esp = ret_value;
 
 	__asm__ __volatile__(
-	"movl %0, %%esp;":
+	"movl %0, %%esp;"
+	:
 	: "g" (new->task.kernel_esp)
 	);
 
@@ -80,11 +82,11 @@ void inner_task_switch(union task_union*new)
 void task_switch(union task_union*new)
 {
   
-	__asm__ __volatile__("pushl %esi;""pushl %edi;""pushl %ebx");
+    __asm__ __volatile__("pushl %esi;""pushl %edi;""pushl %ebx");
 
-   inner_task_switch(new);
+   	inner_task_switch(new);
 
-  __asm__ __volatile__("popl %ebx;""popl %edi;""popl %esi");
+   	__asm__ __volatile__("popl %ebx;""popl %edi;""popl %esi");
 
 }
 
@@ -114,13 +116,13 @@ void init_idle (void)
 
 	idle_task_union = (union task_union*)idle;
 
-	//CONTEXT
 	idle_task_union->stack[KERNEL_STACK_SIZE-1] = (unsigned long)&cpu_idle;
 
 	idle_task_union->stack[KERNEL_STACK_SIZE-2] = 0;
 
 	idle_task_union->task.kernel_esp = (unsigned long)&idle_task_union->stack[KERNEL_STACK_SIZE-2];
-	////////
+
+	idle_task_union->task.quantum = QUANTUM;
 
 	idle_task = idle; 
 }
@@ -141,11 +143,11 @@ void init_task1(void)
 
 	union task_union *init_task_union = (union task_union*)init;
 
+	init_task_union->task.quantum = QUANTUM;
+
 	tss.esp0 = (unsigned long)&init_task_union->stack[KERNEL_STACK_SIZE];
 
 	set_cr3(init->dir_pages_baseAddr);
-
-
 }
 
 void init_freequeue()
@@ -170,6 +172,8 @@ void init_readyqueue()
 }
 
 void init_sched(){
+
+	freePID = 2;
 	
 	init_freequeue();
 

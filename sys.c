@@ -19,6 +19,8 @@
 #define ESCRIPTURA 1
 #define BUFFER_SIZE 128
 
+extern int freePID;
+
 int check_fd(int fd, int permissions)
 {
   if (fd!=1) return -9; /*EBADF*/
@@ -36,11 +38,88 @@ int sys_getpid()
 	return current()->PID;
 }
 
+int ret_from_fork() {
+  return 0;
+}
+
 int sys_fork()
 {
   int PID=-1;
 
-  // creates the child process
+  if(list_empty(&freequeue)) return -ENOSPACE;
+
+  struct list_head *head = list_first(&freequeue);
+
+  list_del(head);
+
+  struct task_struct *child_task = list_head_to_task_struct(head);  
+
+  copy_data(current(),child_task,PAGE_SIZE);
+  
+  allocate_DIR(child_task);
+
+  page_table_entry *parent_PT = get_PT(current());
+  page_table_entry *child_PT = get_PT(child_task);
+  
+
+  // Allocate page for DATA+STACK
+  int new_frame, pag, i;
+  for (pag=0; pag<NUM_PAG_DATA; pag++) {
+    new_frame = alloc_frame();
+    if (new_frame != -1) {
+      set_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag, new_frame);
+    }
+    else { // no free pages petar tot
+      for (i=0; i<pag; i++) {
+        free_frame(get_frame(child_PT,PAG_LOG_INIT_DATA+i));
+        del_ss_pag(child_PT, PAG_LOG_INIT_DATA+i);
+      }
+      list_add_tail(head, &freequeue);
+      return -ENOPAGES;;
+    }
+  }
+
+  
+  // copy data+stack pages del padre al hijo
+  int INIT_PAGE_DATA = PAG_LOG_INIT_DATA;
+  int END_PAGE_DATA = INIT_PAGE_DATA+NUM_PAG_DATA;
+  //int INIT_PAGE_DATA = NUM_PAG_KERNEL+NUM_PAG_CODE;
+  //int END_PAGE_DATA = NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA;
+
+
+  for (pag=INIT_PAGE_DATA; pag<END_PAGE_DATA; pag++) {
+      set_ss_pag(parent_PT, pag+NUM_PAG_DATA, get_frame(child_PT, pag));
+      copy_data((void*)((pag)*PAGE_SIZE), (void*)((pag+NUM_PAG_DATA)*PAGE_SIZE), PAGE_SIZE);
+      del_ss_pag(parent_PT, pag+NUM_PAG_DATA);
+    } 
+
+  //assignamos las paginas del codigo del padre al nuevo proceso (no copia)
+  for (pag=0; pag<NUM_PAG_CODE; pag++) {
+    set_ss_pag(child_PT,PAG_LOG_INIT_CODE+pag,get_frame(parent_PT,PAG_LOG_INIT_CODE+pag));
+  }
+  // assignamos las paginas del kernel (comun para todos los procs) al nuevo proceso (no copia)
+  for (pag=0; pag<NUM_PAG_KERNEL; pag++) {
+    set_ss_pag(child_PT,pag,get_frame(parent_PT,pag));
+  }
+  
+   
+  //FLUSH DEL TLB
+  set_cr3(current()->dir_pages_baseAddr);
+   
+  //CUSTOMIZAR CONTEXT PROCESO HIJO
+  PID = freePID;
+  child_task->PID = PID;
+  ++freePID;
+
+  union task_union *child_union = (union task_union*)child_task;
+  union task_union *parent_union =(union task_union*)current();
+
+  child_union->stack[KERNEL_STACK_SIZE-18] = (unsigned int)&ret_from_fork;
+  child_union->stack[KERNEL_STACK_SIZE-19] = 0;
+  child_task->kernel_esp = (unsigned long)&child_union->stack[KERNEL_STACK_SIZE-19];
+  child_task->quantum = current()->quantum;
+
+  list_add_tail(head, &readyqueue);
   
   return PID;
 }
