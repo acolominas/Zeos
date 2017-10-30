@@ -24,6 +24,7 @@ struct task_struct *list_head_to_task_struct(struct list_head *l)
 #endif
 
 int freePID;
+int quantum_total;
 extern struct list_head blocked;
 struct task_struct *idle_task;
 
@@ -123,6 +124,7 @@ void init_idle (void)
 	idle_task_union->task.kernel_esp = (unsigned long)&idle_task_union->stack[KERNEL_STACK_SIZE-2];
 
 	idle_task_union->task.quantum = QUANTUM;
+	idle_task_union->task.state = ST_READY;
 
 	idle_task = idle; 
 }
@@ -144,6 +146,7 @@ void init_task1(void)
 	union task_union *init_task_union = (union task_union*)init;
 
 	init_task_union->task.quantum = QUANTUM;
+	init_task_union->task.state = ST_READY;
 
 	tss.esp0 = (unsigned long)&init_task_union->stack[KERNEL_STACK_SIZE];
 
@@ -171,6 +174,23 @@ void init_readyqueue()
 	INIT_LIST_HEAD(&readyqueue);
 }
 
+void update_sched_data_rr (void)
+{
+	--quantum_total;
+}
+
+int needs_sched_rr (void) 
+{ 
+//returns: 1 if it is necessary to change the current process and 0
+//otherwise
+	return quantum_total == 0;
+}
+
+void update_process_state_rr (struct task_struct *t, struct list_head *dst_queue)
+{
+	//if (current()-)
+}
+
 void init_sched(){
 
 	freePID = 2;
@@ -178,6 +198,8 @@ void init_sched(){
 	init_freequeue();
 
 	init_readyqueue();
+
+	quantum_total = SCHED_QUANTUM;
 
 }
 

@@ -20,6 +20,34 @@
 #define BUFFER_SIZE 128
 
 extern int freePID;
+extern int zeos_ticks;
+
+int rand(void)
+{
+    return zeos_ticks;
+}
+
+int obtainPID()
+{  
+  
+  int pid_ok = 0;
+  int pid;
+  while (pid_ok != 1) {
+    pid = rand() % 10;
+    if (pid == 0) pid += 2;
+    else if (pid == 1) pid+=1;
+
+    int i = 2;
+    int pid_encontrado = 0;
+    while (pid_encontrado == 0 && i < NR_TASKS) {
+      if (pid == task[i].task.PID) pid_encontrado = 1;
+      ++i; 
+    }
+
+    if (i == 10 && pid_encontrado == 0) pid_ok = 1;
+  }
+  return pid;
+}
 
 int check_fd(int fd, int permissions)
 {
@@ -107,9 +135,10 @@ int sys_fork()
   set_cr3(current()->dir_pages_baseAddr);
    
   //CUSTOMIZAR CONTEXT PROCESO HIJO
-  PID = freePID;
+  PID = obtainPID();
+  //PID = freePID;
   child_task->PID = PID;
-  ++freePID;
+  //++freePID;
 
   union task_union *child_union = (union task_union*)child_task;
   union task_union *parent_union =(union task_union*)current();
@@ -118,6 +147,7 @@ int sys_fork()
   child_union->stack[KERNEL_STACK_SIZE-19] = 0;
   child_task->kernel_esp = (unsigned long)&child_union->stack[KERNEL_STACK_SIZE-19];
   child_task->quantum = current()->quantum;
+  child_task->state = ST_READY;
 
   list_add_tail(head, &readyqueue);
   
