@@ -93,10 +93,11 @@ void setIdt()
 void clock_routine()
 {
   ++zeos_ticks;
-  if(zeos_ticks == 400) {  
+  /*if(zeos_ticks == 400) {  
       task_switch(idle_task_union);
-  }
+  }*/
   zeos_show_clock();
+  schedule();
 }
 
 void keyboard_routine()

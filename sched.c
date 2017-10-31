@@ -99,7 +99,7 @@ void cpu_idle(void)
     //itoa(pid,buffer);
 	while(1)
 	{
-	;	//sys_write(1,buffer,4);
+		sys_write(1,"idle",4);
 	}
 }
 
@@ -146,7 +146,7 @@ void init_task1(void)
 	union task_union *init_task_union = (union task_union*)init;
 
 	init_task_union->task.quantum = QUANTUM;
-	init_task_union->task.state = ST_READY;
+	init_task_union->task.state = ST_RUN;
 
 	tss.esp0 = (unsigned long)&init_task_union->stack[KERNEL_STACK_SIZE];
 
@@ -156,16 +156,9 @@ void init_task1(void)
 void init_freequeue()
 {
 	INIT_LIST_HEAD(&freequeue);
-    
-    struct list_head *head = list_first(&freequeue);
-
-	for (int i=1;i<NR_TASKS;++i) {		
-
-        struct list_head *new = &task[i].task.list;
-
-		list_add(new,head);
-
-		head = new;
+	   
+	for (int i = 0; i < NR_TASKS; ++i) {
+		list_add_tail(&(task[i].task.list), &freequeue);		
 	}
 }
 
@@ -174,21 +167,72 @@ void init_readyqueue()
 	INIT_LIST_HEAD(&readyqueue);
 }
 
-void update_sched_data_rr (void)
+int get_quantum(struct task_struct *t) {
+	return t->quantum;
+}
+void set_quantum(struct task_struct *t, int quantum) {
+	t->quantum = quantum;
+}
+
+void update_sched_data_rr ()
 {
-	--quantum_total;
+	--current()->quantum;
+}
+
+void sched_next_rr ()
+{
+	struct list_head *head = list_first(&readyqueue);
+	task_switch((union task_union*)list_head_to_task_struct(head));
+	list_del(head);
 }
 
 int needs_sched_rr (void) 
 { 
 //returns: 1 if it is necessary to change the current process and 0
 //otherwise
-	return quantum_total == 0;
+	return current()->quantum == 0;
 }
 
 void update_process_state_rr (struct task_struct *t, struct list_head *dst_queue)
 {
-	//if (current()-)
+	if (t->state != ST_RUN) {	
+		//list_del(&(t->list));
+		t->state = ST_RUN;
+
+	}
+	else {
+		//while(1) sys_write(1,"hola",4);
+		t->quantum = QUANTUM;
+		list_add_tail(&(t->list),dst_queue);
+	}
+
+}
+
+void schedule()
+{
+	update_sched_data_rr ();
+
+	if (needs_sched_rr()) { 
+
+		if (!list_empty(&readyqueue)) {
+            //context switch
+			if (current()->PID != 0) {
+				current()->state = ST_READY;
+				update_process_state_rr(current(),&readyqueue);			
+			
+			}
+			
+			struct list_head *head = list_first(&readyqueue);
+			struct task_struct *next = list_head_to_task_struct(head);
+						
+			//update_process_state_rr(next,NULL);
+			
+			//sched_next_rr();
+		}
+		else {
+			task_switch(idle_task_union);
+		}
+	}
 }
 
 void init_sched(){
@@ -198,8 +242,6 @@ void init_sched(){
 	init_freequeue();
 
 	init_readyqueue();
-
-	quantum_total = SCHED_QUANTUM;
 
 }
 

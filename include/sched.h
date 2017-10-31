@@ -11,8 +11,8 @@
 
 #define NR_TASKS      10
 #define KERNEL_STACK_SIZE	1024
-#define QUANTUM 10
-#define SCHED_QUANTUM 50
+#define QUANTUM 50
+
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 
@@ -68,5 +68,6 @@ void sched_next_rr();
 void update_process_state_rr(struct task_struct *t, struct list_head *dest);
 int needs_sched_rr();
 void update_sched_data_rr();
+void schedule();
 
 #endif  /* __SCHED_H__ */
