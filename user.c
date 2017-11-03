@@ -12,11 +12,20 @@ int __attribute__ ((__section__(".text.main")))
 
      int pid = fork();
      while(1) {         
-	     //int time = gettime();
-	     //char buffer[4];
-	     //itoa(pid,buffer);
-	     //write(1,buffer,4);	     
-	     //write(1,"\n",1);
+     	 if (pid == 0) {
+	     	write(1,"hijo",4);	     
+	     	write(1,"\n",1);
+	     	exit();
+
+	     }
+	     else 
+	     {
+	     	write(1,"     padre",10);
+	     	write(1,"\n",1);	     	
+	     }
+	     
+
+	    
 	  }
 	  
 }

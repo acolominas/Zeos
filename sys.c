@@ -82,7 +82,9 @@ int sys_fork()
 
   struct task_struct *child_task = list_head_to_task_struct(head);  
 
-  copy_data(current(),child_task,PAGE_SIZE);
+  union task_union *child_union = (union task_union*)child_task;
+
+  copy_data(current(),child_union,sizeof(union task_union));
   
   allocate_DIR(child_task);
 
@@ -92,12 +94,13 @@ int sys_fork()
 
   // Allocate page for DATA+STACK
   int new_frame, pag, i;
-  for (pag=0; pag<NUM_PAG_DATA; pag++) {
+  for (pag=0; pag<NUM_PAG_DATA; pag++) 
+  {
     new_frame = alloc_frame();
     if (new_frame != -1) {
       set_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag, new_frame);
     }
-    else { // no free pages petar tot
+    else { // no free pages
       for (i=0; i<pag; i++) {
         free_frame(get_frame(child_PT,PAG_LOG_INIT_DATA+i));
         del_ss_pag(child_PT, PAG_LOG_INIT_DATA+i);
@@ -107,12 +110,9 @@ int sys_fork()
     }
   }
 
-  
-  // copy data+stack pages del padre al hijo
-  int INIT_PAGE_DATA = PAG_LOG_INIT_DATA;
-  int END_PAGE_DATA = INIT_PAGE_DATA+NUM_PAG_DATA;
-  //int INIT_PAGE_DATA = NUM_PAG_KERNEL+NUM_PAG_CODE;
-  //int END_PAGE_DATA = NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA;
+  // copy data+stack pages del padre al hijo 
+  int INIT_PAGE_DATA = NUM_PAG_KERNEL+NUM_PAG_CODE;
+  int END_PAGE_DATA = NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA;
 
 
   for (pag=INIT_PAGE_DATA; pag<END_PAGE_DATA; pag++) {
@@ -120,7 +120,7 @@ int sys_fork()
       copy_data((void*)((pag)*PAGE_SIZE), (void*)((pag+NUM_PAG_DATA)*PAGE_SIZE), PAGE_SIZE);
       del_ss_pag(parent_PT, pag+NUM_PAG_DATA);
     } 
-
+ 
   //assignamos las paginas del codigo del padre al nuevo proceso (no copia)
   for (pag=0; pag<NUM_PAG_CODE; pag++) {
     set_ss_pag(child_PT,PAG_LOG_INIT_CODE+pag,get_frame(parent_PT,PAG_LOG_INIT_CODE+pag));
@@ -129,7 +129,7 @@ int sys_fork()
   for (pag=0; pag<NUM_PAG_KERNEL; pag++) {
     set_ss_pag(child_PT,pag,get_frame(parent_PT,pag));
   }
-  
+ 
    
   //FLUSH DEL TLB
   set_cr3(current()->dir_pages_baseAddr);
@@ -140,13 +140,12 @@ int sys_fork()
   child_task->PID = PID;
   //++freePID;
 
-  union task_union *child_union = (union task_union*)child_task;
   union task_union *parent_union =(union task_union*)current();
 
   child_union->stack[KERNEL_STACK_SIZE-18] = (unsigned int)&ret_from_fork;
   child_union->stack[KERNEL_STACK_SIZE-19] = 0;
   child_task->kernel_esp = (unsigned long)&child_union->stack[KERNEL_STACK_SIZE-19];
-  child_task->quantum = current()->quantum;
+  //child_task->quantum = current()->quantum;
   child_task->state = ST_READY;
 
   list_add_tail(head, &readyqueue);
@@ -165,13 +164,14 @@ void sys_exit()
   //FREE DATA PAGES & PAGE TABLE
   page_table_entry *task_PT = get_PT(task);
   
+  int i;
+  
   for (i=0; i<NUM_PAG_DATA; i++) {
       free_frame(get_frame(task_PT,PAG_LOG_INIT_DATA+i));
       del_ss_pag(task_PT, PAG_LOG_INIT_DATA+i);
   }
   //RUN NEXT PROCESS
   sched_next_rr();
-{
 }
 
 int sys_write(int fd,char *buffer, int size)
@@ -202,4 +202,3 @@ int sys_gettime()
   extern int zeos_ticks;
   return zeos_ticks;
 }
-

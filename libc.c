@@ -91,13 +91,8 @@ int fork()
 
 void exit(void)
 {
-  int res = -1;
-  __asm__ __volatile__ ("int $0x80;":"=a" (res): "a" (1));
-  if(res < 0){
-      errno = -res;
-      return -1;
-  }
-  return res;
+   __asm__ __volatile__ ("int $0x80;":: "a" (1));
+ 
 }
 
 

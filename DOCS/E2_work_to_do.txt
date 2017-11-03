@@ -6,7 +6,7 @@
 • Implement the task_switch function. OK!
 • Implement the inner_task_switch function. OK!
 • Implement the getpid system call. OK!
-• Implement the fork system call.
+• Implement the fork system call.OK!
 • Implement process scheduling.
-• Implement the exit system call.
+• Implement the exit system call. OK!
 • Implement the getstats system call.

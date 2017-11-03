@@ -23,8 +23,7 @@ struct task_struct *list_head_to_task_struct(struct list_head *l)
 }
 #endif
 
-int freePID;
-int quantum_total;
+int quantum_total = 0;
 extern struct list_head blocked;
 struct task_struct *idle_task;
 
@@ -148,6 +147,8 @@ void init_task1(void)
 	init_task_union->task.quantum = QUANTUM;
 	init_task_union->task.state = ST_RUN;
 
+	quantum_total = init_task_union->task.quantum;
+
 	tss.esp0 = (unsigned long)&init_task_union->stack[KERNEL_STACK_SIZE];
 
 	set_cr3(init->dir_pages_baseAddr);
@@ -176,68 +177,61 @@ void set_quantum(struct task_struct *t, int quantum) {
 
 void update_sched_data_rr ()
 {
-	--current()->quantum;
+	--quantum_total;
 }
 
 void sched_next_rr ()
 {
-	struct list_head *head = list_first(&readyqueue);
-	task_switch((union task_union*)list_head_to_task_struct(head));
-	list_del(head);
+	if (!list_empty(&readyqueue)) {
+		struct list_head *head = list_first(&readyqueue);
+		struct task_struct *next = list_head_to_task_struct(head);
+		next->state = ST_RUN;
+		quantum_total = get_quantum(next);
+		task_switch((union task_union*)next);
+		list_del(head);
+	}
+	else {
+		task_switch(idle_task_union);
+		idle_task_union->task.state = ST_RUN;
+		quantum_total = get_quantum(&idle_task_union->task);
+	}
 }
 
 int needs_sched_rr (void) 
 { 
 //returns: 1 if it is necessary to change the current process and 0
 //otherwise
-	return current()->quantum == 0;
+	if ((quantum_total == 0) && (!list_empty(&readyqueue))) return 1;
+	if (quantum_total == 0) quantum_total = current()->quantum;
+	return 0;
 }
 
 void update_process_state_rr (struct task_struct *t, struct list_head *dst_queue)
 {
-	if (t->state != ST_RUN) {	
-		//list_del(&(t->list));
-		t->state = ST_RUN;
-
+	if (t->state != ST_RUN) list_del(&(t->list));		
+	if (dst_queue != NULL)
+	{
+    	list_add_tail(&(t->list),dst_queue);
+    	t->state = ST_READY;
 	}
-	else {
-		//while(1) sys_write(1,"hola",4);
-		t->quantum = QUANTUM;
-		list_add_tail(&(t->list),dst_queue);
-	}
-
+	else t->state = ST_RUN;
+		
 }
 
 void schedule()
 {
 	update_sched_data_rr ();
 
-	if (needs_sched_rr()) { 
+	if (needs_sched_rr()) { 	       
 
-		if (!list_empty(&readyqueue)) {
-            //context switch
-			if (current()->PID != 0) {
-				current()->state = ST_READY;
-				update_process_state_rr(current(),&readyqueue);			
+		update_process_state_rr(current(),&readyqueue);			
 			
-			}
-			
-			struct list_head *head = list_first(&readyqueue);
-			struct task_struct *next = list_head_to_task_struct(head);
+		sched_next_rr();					
 						
-			//update_process_state_rr(next,NULL);
-			
-			//sched_next_rr();
-		}
-		else {
-			task_switch(idle_task_union);
-		}
-	}
+	}	
+	
 }
-
 void init_sched(){
-
-	freePID = 2;
 	
 	init_freequeue();
 
