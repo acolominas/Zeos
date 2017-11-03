@@ -156,6 +156,22 @@ int sys_fork()
 
 void sys_exit()
 {  
+  struct task_struct *task = current();
+
+  //FREE STRUCTURES
+  task->PID = -1;
+  list_add_tail(&(task->list), &freequeue);
+
+  //FREE DATA PAGES & PAGE TABLE
+  page_table_entry *task_PT = get_PT(task);
+  
+  for (i=0; i<NUM_PAG_DATA; i++) {
+      free_frame(get_frame(task_PT,PAG_LOG_INIT_DATA+i));
+      del_ss_pag(task_PT, PAG_LOG_INIT_DATA+i);
+  }
+  //RUN NEXT PROCESS
+  sched_next_rr();
+{
 }
 
 int sys_write(int fd,char *buffer, int size)
