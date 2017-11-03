@@ -141,5 +141,6 @@
 #define EPNULL 		132 /* Pointer is null */
 #define ENOSPACE 	133 /*No space for a new process*/
 #define ENOPAGES 	134 /*No enough free pages*/
+#define ENOPID		135 /*No such process*/
 
 #endif

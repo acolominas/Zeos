@@ -1,5 +1,5 @@
 #include <libc.h>
-
+#include <stats.h>
 char buff[24];
 
 int pid;
@@ -14,7 +14,7 @@ int __attribute__ ((__section__(".text.main")))
      while(1) {         
      	 if (pid == 0) {
 	     	write(1,"hijo",4);	     
-	     	write(1,"\n",1);
+	     	write(1,"\n",1); 
 	     	exit();
 
 	     }

@@ -95,8 +95,17 @@ void exit(void)
  
 }
 
+int get_stats(int pid, struct stats *st)
+{
+  int res = -1;
+  __asm__ __volatile__ ("int $0x80;":"=a" (res): "a" (35),"b" (pid),"c"(st));
+  if(res < 0){
+      errno = -res;
+      return -1;
+  }
+  return res;
 
-
+}
 void perror(char *s)
 {
   
@@ -123,6 +132,9 @@ void perror(char *s)
         break;
     case ENOPAGES:
         write(1,"There are no enough free pages",29);
+        break;
+    case ENOPID:
+        write(1,"No such process",15);
         break;
   } 
 }

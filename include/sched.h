@@ -8,6 +8,7 @@
 #include <list.h>
 #include <types.h>
 #include <mm_address.h>
+#include <stats.h>
 
 #define NR_TASKS      10
 #define KERNEL_STACK_SIZE	1024
@@ -22,6 +23,7 @@ struct task_struct {
   unsigned long kernel_esp;
   int PID;			/* Process ID. This MUST be the first field of the struct. */
   page_table_entry * dir_pages_baseAddr;
+  struct stats statistics;
   struct list_head list;
 };
 
@@ -69,5 +71,6 @@ void update_process_state_rr(struct task_struct *t, struct list_head *dest);
 int needs_sched_rr();
 void update_sched_data_rr();
 void schedule();
+struct task_struct * getStruct(int pid);
 
 #endif  /* __SCHED_H__ */

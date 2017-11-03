@@ -136,19 +136,19 @@ int sys_fork()
    
   //CUSTOMIZAR CONTEXT PROCESO HIJO
   PID = obtainPID();
-  //PID = freePID;
-  child_task->PID = PID;
-  //++freePID;
-
-  union task_union *parent_union =(union task_union*)current();
+ 
+  child_task->PID = PID;  
 
   child_union->stack[KERNEL_STACK_SIZE-18] = (unsigned int)&ret_from_fork;
   child_union->stack[KERNEL_STACK_SIZE-19] = 0;
   child_task->kernel_esp = (unsigned long)&child_union->stack[KERNEL_STACK_SIZE-19];
-  //child_task->quantum = current()->quantum;
   child_task->state = ST_READY;
 
   list_add_tail(head, &readyqueue);
+
+
+  //STATISTICS
+  init_statistics(child_task);
   
   return PID;
 }
@@ -166,9 +166,9 @@ void sys_exit()
   
   int i;
   
-  for (i=0; i<NUM_PAG_DATA; i++) {
+  for (i=0; i<NUM_PAG_DATA; i++) {      
       free_frame(get_frame(task_PT,PAG_LOG_INIT_DATA+i));
-      del_ss_pag(task_PT, PAG_LOG_INIT_DATA+i);
+      //del_ss_pag(task_PT, PAG_LOG_INIT_DATA+i);
   }
   //RUN NEXT PROCESS
   sched_next_rr();
@@ -201,4 +201,16 @@ int sys_gettime()
 {
   extern int zeos_ticks;
   return zeos_ticks;
+}
+
+int sys_getstats(int pid,struct stats *st)
+{
+  struct task_struct * task = getStruct(pid);
+
+  if (task != NULL) {
+    copy_to_user(&(task->statistics),st,12);
+    return 0;
+  } 
+  else return -ENOPID;
+  
 }

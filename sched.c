@@ -125,6 +125,8 @@ void init_idle (void)
 	idle_task_union->task.quantum = QUANTUM;
 	idle_task_union->task.state = ST_READY;
 
+	init_statistics(idle);
+
 	idle_task = idle; 
 }
 
@@ -150,6 +152,9 @@ void init_task1(void)
 	quantum_total = init_task_union->task.quantum;
 
 	tss.esp0 = (unsigned long)&init_task_union->stack[KERNEL_STACK_SIZE];
+
+	//STATISTICS
+	init_statistics(init);
 
 	set_cr3(init->dir_pages_baseAddr);
 }
@@ -255,3 +260,32 @@ struct task_struct *list_head_to_task_struct(struct list_head *l) {
 
 }
 
+struct task_struct * getStruct(int pid)
+{
+    struct task_struct *ret = NULL;
+
+	if (current()->PID == pid) ret = current();
+	else {		
+
+		struct list_head * e;
+
+        list_for_each( e, &readyqueue ) {
+            struct task_struct *task = list_head_to_task_struct(e);
+            if (task->PID == pid) {
+            	ret = task;
+            	break;
+            }
+
+   		}
+
+	}
+
+		
+}
+
+void init_statistics(struct task_struct *task)
+{
+	task->statistics.user_ticks = 0;
+	task->statistics.system_ticks = 0;
+	task->statistics.elapsed_total_ticks = 0;
+}
