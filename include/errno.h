@@ -5,16 +5,16 @@
 #define ENOENT       2  /* No such file or directory */
 #define ESRCH        3  /* No such process */
 #define EINTR        4  /* Interrupted system call */
-#define EIO          5  /* I/O error */
+#define EIO      5  /* I/O error */
 #define ENXIO        6  /* No such device or address */
 #define E2BIG        7  /* Argument list too long */
 #define ENOEXEC      8  /* Exec format error */
-#define EBADF        9  /* Bad file number */				
+#define EBADF        9  /* Bad file number */
 #define ECHILD      10  /* No child processes */
 #define EAGAIN      11  /* Try again */
 #define ENOMEM      12  /* Out of memory */
 #define EACCES      13  /* Permission denied */
-#define EFAULT      14  /* Bad address */				
+#define EFAULT      14  /* Bad address */
 #define ENOTBLK     15  /* Block device required */
 #define EBUSY       16  /* Device or resource busy */
 #define EEXIST      17  /* File exists */
@@ -22,7 +22,7 @@
 #define ENODEV      19  /* No such device */
 #define ENOTDIR     20  /* Not a directory */
 #define EISDIR      21  /* Is a directory */
-#define EINVAL      22  /* Invalid argument */				
+#define EINVAL      22  /* Invalid argument */
 #define ENFILE      23  /* File table overflow */
 #define EMFILE      24  /* Too many open files */
 #define ENOTTY      25  /* Not a typewriter */
@@ -135,12 +135,5 @@
 #define EKEYREVOKED 128 /* Key has been revoked */
 #define EKEYREJECTED    129 /* Key was rejected by service */
 
-/* for robust mutexes */
-#define EOWNERDEAD  130 /* Owner died */
-#define ENOTRECOVERABLE 131 /* State not recoverable */
-#define EPNULL 		132 /* Pointer is null */
-#define ENOSPACE 	133 /*No space for a new process*/
-#define ENOPAGES 	134 /*No enough free pages*/
-#define ENOPID		135 /*No such process*/
-
 #endif
+

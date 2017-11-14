@@ -53,47 +53,65 @@
       movl %edx, %es
 
 #define RESTORE_ALL \
-      popl %ebx; \
-      popl %ecx; \
-      popl %edx; \
-      popl %esi; \
-      popl %edi; \
-      popl %ebp; \
-      popl %eax; \
-      popl %ds; \
-      popl %es; \
-      popl %fs; \
-      popl %gs; 
+      popl %ebx;   \
+      popl %ecx;   \
+      popl %edx;   \
+      popl %esi;   \
+      popl %edi;   \
+      popl %ebp;   \
+      popl %eax;   \
+      popl %ds;    \
+      popl %es;    \
+      popl %fs;    \
+      popl %gs;
 
-#define EOI      \
+#define EOI \
       movb $0x20, %al; \
-      outb %al, $0x20 ;
+      outb %al, $0x20;
 
 ENTRY(clock_handler)
-      SAVE_ALL 
+      SAVE_ALL
+      pushl %eax;
+      call user_to_system;
+      popl %eax;
       EOI
-      call clock_routine 
+      call clock_routine;
+      pushl %eax;
+      call system_to_user;
+      popl %eax;
       RESTORE_ALL
-      iret 
+      iret;
 
-ENTRY(keyboard_handler) 
-      SAVE_ALL 
+ENTRY(keyboard_handler)
+      SAVE_ALL
+      pushl %eax;
+      call user_to_system;
+      popl %eax;
       EOI
-      call keyboard_routine 
+      call keyboard_routine;
+      pushl %eax;
+      call system_to_user;
+      popl %eax;
       RESTORE_ALL
-      iret
+      iret;
 
 ENTRY(system_call_handler)
-      SAVE_ALL                            // Save the current context
-      cmpl $0, %eax                       // Is syscall number negative?
-      jl err                              //If it is, jump to return an error
-      cmpl $MAX_SYSCALL, %eax            // Is syscall greater than MAX_SYSCALL (4)?
-      jg err                              //If it is, jump to return an error
-      call *sys_call_table(, %eax, 0x04)  //Call the corresponding service routine
-      jmp fin                             // Finish
-err: 
-      movl $-ENOSYS, %eax		  // Move to eax the ENOSYS error
+      SAVE_ALL
+      pushl %eax;
+      call user_to_system;
+      popl %eax;
+      cmpl $0, %eax;
+      jl err;
+      cmpl $MAX_SYSCALL, %eax;
+      jg err;
+      call *sys_call_table(, %eax, 0x4);
+      jmp fin;
+err:
+      movl $-ENOSYS, %eax;
 fin:
-      movl %eax, 0x18(%esp)               // Change the eax value in the stack
-      RESTORE_ALL                         // Restore the context
-      iret
+      movl %eax, 0x18(%esp);
+      pushl %eax;
+      call system_to_user;
+      popl %eax;
+      RESTORE_ALL
+      iret;

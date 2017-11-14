@@ -6,8 +6,6 @@
 
 #include <types.h>
 
-#include <errno.h>
-
 int errno;
 
 void itoa(int a, char *b)
@@ -45,98 +43,103 @@ int strlen(char *a)
   return i;
 }
 
-int write(int fd,char *buffer, int size)
+void perror()
 {
-  int res;
-  __asm__ __volatile__ ("int $0x80;": "=a" (res): "a" (4), "b" (fd),"c" (buffer), "d" (size));
-  if(res < 0){
-      errno = -res;
-      return -1;
-  }
-  return res;
+  char buffer[256];
+
+  itoa(errno, buffer);
+
+  write(1, buffer, strlen(buffer));
 }
 
+int write(int fd, char *buffer, int size)
+{
+  int result;
+  
+  __asm__ __volatile__ (
+	"int $0x80\n\t"
+	: "=a" (result)
+	: "a" (4), "b" (fd), "c" (buffer), "d" (size));
+  if (result<0)
+  {
+    errno = -result;
+    return -1;
+  }
+  errno=0;
+  return result;
+}
+ 
 int gettime()
-{  
-  int res = -1;
-  __asm__ __volatile__ ("int $0x80;":"=a" (res): "a" (10));
-  if(res < 0){
-      errno = -res;
-      return -1;
-  }
-  return res;
+{
+  int result;
+  
+  __asm__ __volatile__ (
+	"int $0x80\n\t"
+	:"=a" (result)
+	:"a" (10) );
+  errno=0;
+  return result;
 }
 
-int getpid(){
-  int res = -1;
-  __asm__ __volatile__ ("int $0x80;":"=a" (res): "a" (20));
-  if(res < 0){
-      errno = -res;
-      return -1;
-  }
-  return res;
-
+int getpid()
+{
+  int result;
+  
+  __asm__ __volatile__ (
+  	"int $0x80\n\t"
+	:"=a" (result)
+	:"a" (20) );
+  errno=0;
+  return result;
 }
 
 int fork()
 {
-  int res = -1;
-  __asm__ __volatile__ ("int $0x80;":"=a" (res): "a" (2));
-  if(res < 0){
-      errno = -res;
-      return -1;
+  int result;
+  
+  __asm__ __volatile__ (
+  	"int $0x80\n\t"
+	:"=a" (result)
+	:"a" (2) );
+  if (result<0)
+  {
+    errno = -result;
+    return -1;
   }
-  return res;
+  errno=0;
+  return result;
 }
 
 void exit(void)
 {
-   __asm__ __volatile__ ("int $0x80;":: "a" (1));
- 
+  __asm__ __volatile__ (
+  	"int $0x80\n\t"
+	:
+	:"a" (1) );
+}
+
+int yield()
+{
+  int result;
+  __asm__ __volatile__ (
+  	"int $0x80\n\t"
+	:"=a" (result)
+	:"a" (13) );
+  return result;
 }
 
 int get_stats(int pid, struct stats *st)
 {
-  int res = -1;
-  __asm__ __volatile__ ("int $0x80;":"=a" (res): "a" (35),"b" (pid),"c"(st));
-  if(res < 0){
-      errno = -res;
-      return -1;
+  int result;
+  __asm__ __volatile__ (
+  	"int $0x80\n\t"
+	:"=a" (result)
+	:"a" (35), "b" (pid), "c" (st) );
+  if (result<0)
+  {
+    errno = -result;
+    return -1;
   }
-  return res;
-
+  errno=0;
+  return result;
 }
-void perror(char *s)
-{
-  
-  write(1,s,strlen(s));
-
-  switch(errno){
-    case ENOSYS:
-         write(1,"Function not implemented",24);
-         break;
-    case EPNULL:
-        write(1,"Pointer is null",15);
-        break;
-    case EMSGSIZE:
-        write(1,"Message too long",16);
-        break;
-    case EACCES:
-        write(1,"Permission denied",17);
-        break;
-    case EBADF:
-        write(1,"Bad file number",15);
-        break;
-    case ENOSPACE:
-        write(1,"No space for a new process",26);
-        break;
-    case ENOPAGES:
-        write(1,"There are no enough free pages",29);
-        break;
-    case ENOPID:
-        write(1,"No such process",15);
-        break;
-  } 
-}
-
-
