@@ -11,6 +11,7 @@
 #include <mm.h>
 #include <io.h>
 #include <utils.h>
+#include <schedperf.h>
 //#include <zeos_mm.h> /* TO BE DELETED WHEN ADDED THE PROCESS MANAGEMENT CODE TO BECOME MULTIPROCESS */
 
 
