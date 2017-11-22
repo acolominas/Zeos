@@ -12,6 +12,7 @@
 #include <p_stats.h>
 #include <schedperf.h>
 
+
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
  * to protect against out of bound accesses.
@@ -76,7 +77,7 @@ void cpu_idle(void)
 
 	while(1)
 	{
-	;
+	sys_write(1,"idle",4);
 	}
 }
 
@@ -306,12 +307,12 @@ void force_task_switch()
 
 struct stats * get_task_stats(struct task_struct *t)
 { //returns: a pointer to the statistics field in task t
-  return &(t->p_stats);
+  return &t->p_stats;
 }
 
 struct list_head *get_task_list(struct task_struct *t)
 {//returns: a pointer to the list_head field in the task t
-  return &(t->list);
+  return &t->list;
 }
 
 void block_process(struct list_head *block_queue) {
