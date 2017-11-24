@@ -1,6 +1,9 @@
 #include <libc.h>
 #include <p_stats.h>
 
+#define RR 0
+#define FCFS 1
+
 char buff[24];
 
 int pid;
@@ -14,13 +17,17 @@ int fibonacci(int n)
 }
 
 void write_stats(int pid,struct stats proc)
-{
+{  
   int tam = 5;
   char buff_pid[5];
   char buff[tam];
   write(1,"\n",1);
-  itoa(pid,buff_pid);
-  write(1,buff_pid,5);
+  ;
+  if (pid == 0) write(1,"idle ",5);
+  else { 
+  	itoa(pid,buff_pid);
+  	write(1,buff_pid,5);
+  }
   itoa(proc.user_ticks,buff);
   write(1,buff,tam);
   itoa(proc.system_ticks,buff);
@@ -29,8 +36,6 @@ void write_stats(int pid,struct stats proc)
   write(1,buff,tam);
   itoa(proc.ready_ticks,buff);
   write(1,buff,tam);
-  write(1,"\n",1);
-
 }
 
 int bucle(int tam)
@@ -51,13 +56,18 @@ int __attribute__ ((__section__(".text.main")))
   int res = 0;
   int total = 0;
   int tam = 10000;
-  //0 (round robin) or 1 (FCFS)
-  res = set_sched_policy(0);
+  int ticks_blocked = 1;
+  struct stats p_stats;
+  res = set_sched_policy(FCFS);
   write(1,"\n",1);
+  write(1,"PROC ",5);
+  write(1,"USER ",5);
+  write(1,"SYS ",4);
+  write(1,"BLOCK ",6);
+  write(1,"READY ",6);
   if (res < 0)   write(1,"error",5);
   else {
-    char buffer[8];
-    struct stats p_stats;
+    char buffer[8];    
     int i;
     for(i = 0; i < 3; ++i) {
       int id = fork();
@@ -65,6 +75,7 @@ int __attribute__ ((__section__(".text.main")))
       //write(1,buffer,5);
       if (id == 0){
         //total = bucle(tam);
+        read(0," ",ticks_blocked);
         int f = fibonacci(25);
         int pid = getpid();
         get_stats(pid,&p_stats);
@@ -73,5 +84,7 @@ int __attribute__ ((__section__(".text.main")))
       }
     }
   }
+  read(0,"",ticks_blocked);
+  get_stats(0,&p_stats);
+  write_stats(0,p_stats);
   while(1);
-}
